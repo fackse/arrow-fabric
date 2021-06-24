@@ -1,0 +1,51 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package org.example.ArrowFabric;
+
+enum Code {
+  UNKNOWN = 0;
+  OK = 1;
+  ERROR = 2;
+}
+message Status{
+  Code code = 1;
+  string message = 2;
+}
+
+message IntVector{
+  Status status = 1;
+  int64 value = 2;
+}
+
+message PingRequest {
+  string message = 1;
+}
+
+message PongResponse {
+  string message = 1;
+}
+
+service PingService {
+  rpc ping(PingRequest) returns (PongResponse);
+}
+
+message CreateIntVector {
+  string name = 1;
+}
+
+message SetIntVector {
+  string name = 1;
+  int64 index = 2;
+  int64 value = 3;
+}
+
+message GetIntVector {
+  string name = 1;
+  int64 index = 2;
+}
+
+service IntVectorService{
+  rpc create(CreateIntVector) returns (Status);
+  rpc set(SetIntVector) returns (Status);
+  rpc get(GetIntVector) returns (IntVector);
+}
