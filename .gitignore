@@ -282,3 +282,11 @@ TSWLatexianTemp*
 # option is specified. Footnotes are the stored in a file with suffix Notes.bib.
 # Uncomment the next line to have this generated file ignored.
 #*Notes.bib
+/target/classes/
+/target/generated-test-sources/
+/target/maven-status/
+/target/protoc-dependencies/
+/target/protoc-plugins/
+/target/test-classes/
+/.idea/
+/ArrowFabric.iml
