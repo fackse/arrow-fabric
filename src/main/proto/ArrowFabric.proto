@@ -60,6 +60,31 @@ service IntVectorService{
   rpc get(GetIntVector) returns (IntVector);
 }
 
+message CreateVector {
+  string name = 1;
+}
+
+message SetVector {
+  string name = 1;
+  int64 index = 2;
+  int64 value = 3;
+}
+
+message GetVector {
+  string name = 1;
+}
+
+message Vector {
+  string type = 1;
+  bytes data = 2;
+}
+
+service VectorService{
+  rpc create(CreateVector) returns (Status);
+  rpc set(SetVector) returns (Status);
+  rpc get(GetVector) returns (Vector);
+}
+
 service DispatcherService{
   rpc getTicket(GetTicket) returns (Ticket);
 }

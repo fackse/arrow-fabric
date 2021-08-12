@@ -3,6 +3,7 @@ package core;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.ValueVector;
 
 import java.util.HashMap;
 
@@ -24,5 +25,12 @@ public class ArrowAllocator {
         return intVector;
     }
 
+    public void newVector(String name) {
+
+    }
+
+    public RootAllocator getAllocator(){
+        return allocator;
+    }
 }
 
