@@ -44,8 +44,22 @@ message GetIntVector {
   int64 index = 2;
 }
 
+message GetTicket {
+  string type = 1;
+  string name = 2;
+}
+
+message Ticket {
+  string server = 1;
+  string transaction_id = 2;
+}
+
 service IntVectorService{
   rpc create(CreateIntVector) returns (Status);
   rpc set(SetIntVector) returns (Status);
   rpc get(GetIntVector) returns (IntVector);
+}
+
+service DispatcherService{
+  rpc getTicket(GetTicket) returns (Ticket);
 }

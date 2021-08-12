@@ -49,6 +49,16 @@ public final class ArrowFabric {
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_org_example_ArrowFabric_GetIntVector_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_example_ArrowFabric_GetTicket_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_org_example_ArrowFabric_GetTicket_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_example_ArrowFabric_Ticket_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_org_example_ArrowFabric_Ticket_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -67,18 +77,23 @@ public final class ArrowFabric {
       "e\022\017\n\007message\030\001 \001(\t\"\037\n\017CreateIntVector\022\014\n" +
       "\004name\030\001 \001(\t\":\n\014SetIntVector\022\014\n\004name\030\001 \001(" +
       "\t\022\r\n\005index\030\002 \001(\003\022\r\n\005value\030\003 \001(\003\"+\n\014GetIn" +
-      "tVector\022\014\n\004name\030\001 \001(\t\022\r\n\005index\030\002 \001(\003*&\n\004" +
-      "Code\022\013\n\007UNKNOWN\020\000\022\006\n\002OK\020\001\022\t\n\005ERROR\020\0022b\n\013" +
-      "PingService\022S\n\004ping\022$.org.example.ArrowF" +
-      "abric.PingRequest\032%.org.example.ArrowFab" +
-      "ric.PongResponse2\210\002\n\020IntVectorService\022S\n" +
-      "\006create\022(.org.example.ArrowFabric.Create" +
-      "IntVector\032\037.org.example.ArrowFabric.Stat" +
-      "us\022M\n\003set\022%.org.example.ArrowFabric.SetI" +
-      "ntVector\032\037.org.example.ArrowFabric.Statu" +
-      "s\022P\n\003get\022%.org.example.ArrowFabric.GetIn" +
-      "tVector\032\".org.example.ArrowFabric.IntVec" +
-      "torB\002P\001b\006proto3"
+      "tVector\022\014\n\004name\030\001 \001(\t\022\r\n\005index\030\002 \001(\003\"\'\n\t" +
+      "GetTicket\022\014\n\004type\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\"0\n" +
+      "\006Ticket\022\016\n\006server\030\001 \001(\t\022\026\n\016transaction_i" +
+      "d\030\002 \001(\t*&\n\004Code\022\013\n\007UNKNOWN\020\000\022\006\n\002OK\020\001\022\t\n\005" +
+      "ERROR\020\0022b\n\013PingService\022S\n\004ping\022$.org.exa" +
+      "mple.ArrowFabric.PingRequest\032%.org.examp" +
+      "le.ArrowFabric.PongResponse2\210\002\n\020IntVecto" +
+      "rService\022S\n\006create\022(.org.example.ArrowFa" +
+      "bric.CreateIntVector\032\037.org.example.Arrow" +
+      "Fabric.Status\022M\n\003set\022%.org.example.Arrow" +
+      "Fabric.SetIntVector\032\037.org.example.ArrowF" +
+      "abric.Status\022P\n\003get\022%.org.example.ArrowF" +
+      "abric.GetIntVector\032\".org.example.ArrowFa" +
+      "bric.IntVector2e\n\021DispatcherService\022P\n\tg" +
+      "etTicket\022\".org.example.ArrowFabric.GetTi" +
+      "cket\032\037.org.example.ArrowFabric.TicketB\002P" +
+      "\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -126,6 +141,18 @@ public final class ArrowFabric {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_example_ArrowFabric_GetIntVector_descriptor,
         new java.lang.String[] { "Name", "Index", });
+    internal_static_org_example_ArrowFabric_GetTicket_descriptor =
+      getDescriptor().getMessageTypes().get(7);
+    internal_static_org_example_ArrowFabric_GetTicket_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_org_example_ArrowFabric_GetTicket_descriptor,
+        new java.lang.String[] { "Type", "Name", });
+    internal_static_org_example_ArrowFabric_Ticket_descriptor =
+      getDescriptor().getMessageTypes().get(8);
+    internal_static_org_example_ArrowFabric_Ticket_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_org_example_ArrowFabric_Ticket_descriptor,
+        new java.lang.String[] { "Server", "TransactionId", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)
