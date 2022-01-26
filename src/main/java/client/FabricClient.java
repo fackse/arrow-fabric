@@ -1,167 +1,172 @@
 package client;
 
+import static core.Util.getSizeFromBytes;
+import static core.Util.printTable;
+
 import core.ArrowAllocator;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.ValueVector;
-import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.ipc.ArrowStreamReader;
-import org.apache.arrow.vector.types.pojo.Field;
-import org.apache.arrow.vector.types.pojo.Schema;
-import org.example.ArrowFabric.*;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.example.ArrowFabric.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
 
+/**
+ * The Fabric Client coordinates the allocation of vectors across different servers based on the
+ * {@link dispatcher.FabricDispatcher} instructions.
+ */
+@Command(
+        name = "fabric-client",
+        mixinStandardHelpOptions = true,
+        description = "Starts the fabric client",
+        version = "0.1")
 public class FabricClient implements AutoCloseable {
-    private static final Logger logger = Logger.getLogger(FabricClient.class.getName());
-    private final DispatcherServiceGrpc.DispatcherServiceBlockingStub dispatcherServiceBlockingStub;
-    ManagedChannel dispatcher_channel;
-    private final ArrowAllocator allocator = new ArrowAllocator();
 
-    public FabricClient(String dispatcher_address) {
-        dispatcher_channel = ManagedChannelBuilder.forTarget(dispatcher_address)
-                // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
-                // needing certificates.
-                .usePlaintext()
-                .build();
+    @CommandLine.Option(
+            names = {"-p", "--dispatcher-port"},
+            description = "Port from dispatcher (default: ${DEFAULT-VALUE})")
+    private int dispatcherPort = 50052;
+
+    @CommandLine.Option(
+            names = {"-a", "--dispatcher-address"},
+            description = "IP from dispatcher (default: ${DEFAULT-VALUE})")
+    private String dispatcherAddress = "localhost";
+
+    private static final Logger logger = LoggerFactory.getLogger(FabricClient.class.getName());
+    /**
+     * {@link org.example.ArrowFabric.DispatcherServiceGrpc.DispatcherServiceBlockingStub} to
+     * communicate with the FabricDispatcher
+     */
+    private final DispatcherServiceGrpc.DispatcherServiceBlockingStub dispatcherServiceBlockingStub;
+
+    /** {@link ManagedChannel} to talk with the FabricDispatcher */
+    ManagedChannel dispatcher_channel;
+
+    /** This {@link ArrowAllocator} is in charge of the underlying Arrow storage */
+    final ArrowAllocator allocator = new ArrowAllocator();
+
+    /**
+     * Initially, the address of the FabricDispatcher must be known. With the help of the {@link
+     * dispatcher.FabricDispatcher}, the fabric client later decides on which server the vectors
+     * should be stored.
+     */
+    public FabricClient() {
+        dispatcher_channel =
+                ManagedChannelBuilder.forTarget(dispatcherAddress + ":" + dispatcherPort)
+                        .usePlaintext()
+                        .build();
         dispatcherServiceBlockingStub = DispatcherServiceGrpc.newBlockingStub(dispatcher_channel);
     }
 
-    public String[] getTicket(String type, String name) {
-        GetTicket request = GetTicket.newBuilder().setType("int").setName(name).build();
-        Ticket ticket;
-        try {
-            ticket = dispatcherServiceBlockingStub.getTicket(request);
-        } catch (StatusRuntimeException e) {
-            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-            return new String[0];
-        }
-        logger.info("[getTicket] Transaction ID: " + ticket.getTransactionId() + "@ " + ticket.getServer());
-        String[] response = new String[2];
-        response[0] = ticket.getTransactionId();
-        response[1] = ticket.getServer();
-        return response;
+    /**
+     * For each vector a dedicated {@link VectorHandler} is used.
+     *
+     * @param type_of_vector Class of the vector
+     * @param name Name of the vector
+     * @param op Type of {@link OP} which is made on the vector
+     * @return {@link VectorHandler} that enables working on a vector.
+     */
+    public VectorHandler getHandler(Class<?> type_of_vector, String name, OP op) {
+        logger.info("[prepare] for " + type_of_vector.getSimpleName() + ":" + name + " with " + op);
+        return new VectorHandler(this, dispatcherAddress, dispatcherPort, type_of_vector, name, op);
     }
 
+    /**
+     * Close channel to {@link dispatcher.FabricDispatcher}
+     *
+     * @throws Exception When awaitTermination messes up
+     */
     @Override
     public void close() throws Exception {
-        // ManagedChannels use resources like threads and TCP connections. To prevent leaking these
-        // resources the channel should be shut down when it will no longer be used. If it may be used
-        // again leave it running.
-        dispatcher_channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+        dispatcher_channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    private class Handler implements AutoCloseable {
-        private String server_address;
-        private String transaction_id;
-        private VectorServiceGrpc.VectorServiceBlockingStub serverServiceBlockingStub;
-        private ManagedChannel server_channel;
-
-        public Handler() {
-        }
-
-        public Handler on(Class<?> type_of_vector, String name) {
-            assert type_of_vector.isInstance(ValueVector.class);
-            // get Ticket from dispatcher
-            String[] data = FabricClient.this.getTicket(type_of_vector.getName(), name);
-            transaction_id = data[0];
-            server_address = data[1];
-            open_channel();
-            return this;
-        }
-
-
-        public void createVector(String name) {
-            logger.info("Will try to create vector " + name + " ...");
-            CreateVector request = CreateVector.newBuilder().setName(name).build();
-            Status response;
-            try {
-                response = serverServiceBlockingStub.create(request);
-            } catch (StatusRuntimeException e) {
-                logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-                return;
-            }
-            logger.info("[createVector] Code: " + response.getCode() + " Answer: " + response.getMessage());
-        }
-
-        public void setVector(String name, int index, int value) {
-            logger.info("Will try to set vector " + name + " ...");
-            SetVector request = SetVector.newBuilder()
-                    .setName(name)
-                    .setIndex(index)
-                    .setValue(value)
-                    .build();
-            Status response;
-            try {
-                response = serverServiceBlockingStub.set(request);
-            } catch (StatusRuntimeException e) {
-                logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-                return;
-            }
-            logger.info("[setVector] Code: " + response.getCode() + " Answer: " + response.getMessage());
-        }
-
-        public ValueVector getVector(String name) throws IOException {
-            logger.info("Will try to get vector " + name + " ...");
-            GetVector request = GetVector.newBuilder()
-                    .setName(name)
-                    .build();
-            Vector response;
-            FieldVector v = null;
-            try {
-                response = serverServiceBlockingStub.get(request);
-                try (ArrowStreamReader reader = new ArrowStreamReader(new ByteArrayInputStream(response.getData().toByteArray()), FabricClient.this.allocator.getAllocator())) {
-                    Schema schema = reader.getVectorSchemaRoot().getSchema();
-                    VectorSchemaRoot readBatch = reader.getVectorSchemaRoot();
-                    reader.loadNextBatch();
-                    v = readBatch.getVector(name);
-                }
-
-            } catch (StatusRuntimeException e) {
-                logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-            }
-            //logger.info("[getVector] Code: " + response.getValue() + " Answer: " + response.getStatus());
-            return v;
-        }
-
-
-        private void open_channel() {
-            //FabricClient.this.getTicket();
-            // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
-            // needing certificates.
-            // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
-            // needing certificates.
-            server_channel = ManagedChannelBuilder.forTarget(server_address)
-                    // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
-                    // needing certificates.
-                    .usePlaintext()
-                    .build();
-            serverServiceBlockingStub = VectorServiceGrpc.newBlockingStub(server_channel);
-        }
-
-        @Override
-        public void close() throws Exception {
-            server_channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+    /** List servers currently available */
+    @SuppressWarnings("unused")
+    @Command(name = "list-servers", description = "List Servers currently available")
+    void commandListServers() {
+        try (FabricClient client = new FabricClient()) {
+            client.listServers();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    public void main(String[] args) throws Exception {
-        String dispatcher = "localhost:50052";
-        // open channel to dispatcher as resource
-        try (FabricClient client = new FabricClient(dispatcher)) {
-            // open write channel as resource
-            try (Handler handler = new Handler().on(IntVector.class, "name1")) {
-                handler.createVector("V1");
-                handler.setVector("V1", 1, 2);
+    /** Asks {@link dispatcher.FabricDispatcher} for active servers and prints table */
+    private void listServers() {
+        Empty request = Empty.newBuilder().build();
+        Iterator<ServerInfo> serverInfoIterator;
+        String[] headers = {
+                "ID", "Address", "Port", "Allocated Memory", "Limit", "Headroom", "# Vectors"
+        };
+        ArrayList<ArrayList<String>> data = new ArrayList<>();
+        try {
+            serverInfoIterator = dispatcherServiceBlockingStub.getServers(request);
+
+            for (Iterator<ServerInfo> it = serverInfoIterator; it.hasNext(); ) {
+                ServerInfo info = it.next();
+                String[] row = {
+                        String.valueOf(info.getId()),
+                        info.getAddress(),
+                        String.valueOf(info.getPort()),
+                        getSizeFromBytes(info.getAllocatedMemory()),
+                        getSizeFromBytes(info.getLimit()),
+                        getSizeFromBytes(info.getHeadroom()),
+                        String.valueOf(info.getNumVectors())
+                };
+                data.add(new ArrayList<>(List.of(row)));
             }
+        } catch (StatusRuntimeException e) {
+            logger.warn("RPC failed: {}", e.getStatus());
+        }
+        printTable(headers, data);
+    }
+
+    /** Asks {@link dispatcher.FabricDispatcher} for available vectors and prints table */
+    private void getVectors() {
+        String[] headers = {"Name", "Type", "Size", "# Elements", "Location / Server ID"};
+        ArrayList<ArrayList<String>> data = new ArrayList<>();
+        try {
+            Iterator<VectorInfo> vectorInfoIterator =
+                    dispatcherServiceBlockingStub.getVectors(Empty.newBuilder().build());
+            vectorInfoIterator.forEachRemaining(
+                    v ->
+                            data.add(
+                                    new ArrayList<>() {
+                                        {
+                                            add(v.getName());
+                                            add(v.getType());
+                                            add(getSizeFromBytes(v.getSize()));
+                                            add(String.valueOf(v.getNumElements()));
+                                            add(v.getLocation());
+                                        }
+                                    }));
+
+        } catch (StatusRuntimeException e) {
+            logger.warn("RPC failed: {}", e.getStatus());
+        }
+        printTable(headers, data);
+    }
+
+    /** List servers currently available */
+    @SuppressWarnings("unused")
+    @Command(name = "list-vectors", description = "List vectors currently allocated")
+    void commandListVectors() {
+        try (FabricClient client = new FabricClient()) {
+            client.getVectors();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
+    public static void main(String[] args) throws Exception {
+        int exitCode = new CommandLine(new FabricClient()).execute(args);
+        System.exit(exitCode);
+    }
 }

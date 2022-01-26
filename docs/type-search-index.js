@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes","url":"allclasses-index.html"},{"p":"core","l":"ArrowAllocator"},{"p":"client","l":"FabricClient"},{"p":"server","l":"FabricServer"},{"p":"core","l":"IntVectorServiceImpl"}]
