@@ -1,15 +1,56 @@
 package core;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import org.apache.arrow.vector.*;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+import picocli.CommandLine.Option;
 import redis.clients.jedis.*;
 
-public class Scribble {
+public class Scribble implements Callable<Integer> {
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Scribble.class);
 
+    @Option(
+        names = {"--port"},
+        description = "Port to listen on (default: ${DEFAULT-VALUE})")
+    int port=50052;
+
+    @Option(
+        names = {"--address"},
+        description = "IP to listen on (default: ${DEFAULT-VALUE})")
+    String address = "localhost";
+
+    @Option(
+        names = {"--redis-address"},
+        description = "Address of redis (default: ${DEFAULT-VALUE})")
+    String redisAddress = "localhost";
+
+    @Option(
+        names = {"--redis-port"},
+        description = "Port of redis (default: ${DEFAULT-VALUE})")
+    int redisPort = 6379;
+
+    @Override
+    public Integer call() throws Exception { // your business logic goes here...
+        logger.info(String.valueOf(port));
+        logger.info(address);
+        logger.info(redisAddress);
+        logger.info(String.valueOf(redisPort));
+        fuck();
+        return 0;
+    }
+
+    public void fuck(){
+        logger.info(String.valueOf(port));
+        logger.info(address);
+        logger.info(redisAddress);
+        logger.info(String.valueOf(redisPort));
+    }
+
     public static void main(String[] args) throws Exception {
-        System.out.println(Util.getConfig());
+        int exitCode = new CommandLine(new Scribble()).execute(args);
+        System.exit(exitCode);
 
     /*
 
@@ -17,7 +58,7 @@ public class Scribble {
     RootAllocator allocator = new RootAllocator(Long.MAX_VALUE);
     VarCharVector varCharVector = new VarCharVector("varcharVar", allocator);
     varCharVector.allocateNew();
-    for (int i = 0; i < 535130; i++) {
+    for (int i = 0; i < 535130; i++) {algorithm
         varCharVector.setSafe(i, ("test" + i).getBytes(StandardCharsets.UTF_8));
     }
     varCharVector.setValueCount(535130);

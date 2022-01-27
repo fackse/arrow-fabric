@@ -1,0 +1,3 @@
+java -cp arrowfabric/target/ArrowFabric-1.0-SNAPSHOT-jar-with-dependencies.jar dispatcher.FabricDispatcher --address=$(hostname) --redis-address=node59
+java -cp arrowfabric/target/ArrowFabric-1.0-SNAPSHOT-jar-with-dependencies.jar server.FabricServer -a $(hostname) --dispatcher-address=node61
+java -cp arrowfabric/target/ArrowFabric-1.0-SNAPSHOT-jar-with-dependencies.jar client.FabricClient --dispatcher-address=node61 list-servers

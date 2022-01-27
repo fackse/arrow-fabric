@@ -1,0 +1,1 @@
+echo "Node Number: ${PBS_NODENUM} Hostname: ${HOSTNAME}" >> /home/nabhan/arrowfabric/.ci/srvrs.txt
