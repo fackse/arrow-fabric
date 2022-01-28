@@ -9,7 +9,6 @@ import java.nio.channels.Channels;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.Float8Vector;
@@ -27,24 +26,17 @@ import org.apache.arrow.vector.types.pojo.Field;
 public class ArrowAllocator {
 
   /**
-   * Every client and server has its own {@link RootAllocator}
+   * Every client and server has its own {@link RootAllocator}. Vectors are placed into this
    */
   public volatile RootAllocator rootAllocator;
-
-  /**
-   * Vectors are placed into this {@link BufferAllocator}
-   */
-  volatile BufferAllocator childAllocator;
 
   /**
    * Internal {@link java.util.HashMap} to access vectors
    */
   private final ConcurrentHashMap<String, ValueVector> vectors = new ConcurrentHashMap<>();
 
-  public ArrowAllocator() {
-    rootAllocator = new RootAllocator(Runtime.getRuntime().maxMemory());
-    childAllocator =
-        rootAllocator.newChildAllocator("childAlloc", 0, Runtime.getRuntime().maxMemory());
+  public ArrowAllocator(long maxMemory) {
+    rootAllocator = new RootAllocator(maxMemory);
   }
 
   /**
@@ -67,13 +59,6 @@ public class ArrowAllocator {
   }
 
   /**
-   * @return Returns the child allocator
-   */
-  public BufferAllocator getChildAllocator() {
-    return childAllocator;
-  }
-
-  /**
    * Creates vector in local arrow storage and places it into the internal hashmap
    *
    * @param vectorName     Name of the vector
@@ -85,17 +70,17 @@ public class ArrowAllocator {
   @SuppressWarnings("unchecked")
   public <T> T createVector(String vectorName, Class<?> type_of_vector) throws Exception {
     if (type_of_vector == IntVector.class) {
-      IntVector vector = new IntVector(vectorName, childAllocator);
+      IntVector vector = new IntVector(vectorName, rootAllocator);
       vector.allocateNew();
       vectors.put(buildKeyForKV(vector), vector);
       return (T) vector;
     } else if (type_of_vector == Float8Vector.class) {
-      Float8Vector vector = new Float8Vector(vectorName, childAllocator);
+      Float8Vector vector = new Float8Vector(vectorName, rootAllocator);
       vector.allocateNew();
       vectors.put(buildKeyForKV(vector), vector);
       return (T) vector;
     } else if (type_of_vector == VarCharVector.class) {
-      VarCharVector vector = new VarCharVector(vectorName, childAllocator);
+      VarCharVector vector = new VarCharVector(vectorName, rootAllocator);
       vector.allocateNew();
       vectors.put(buildKeyForKV(vector), vector);
       return (T) vector;
@@ -238,7 +223,7 @@ public class ArrowAllocator {
   public ValueVector readFromStream(
       ByteArrayOutputStream stream, String nameOfVector, String typeOfVector) {
     ArrowStreamReader reader =
-        new ArrowStreamReader(new ByteArrayInputStream(stream.toByteArray()), childAllocator);
+        new ArrowStreamReader(new ByteArrayInputStream(stream.toByteArray()), rootAllocator);
     try {
       VectorSchemaRoot readBatch = reader.getVectorSchemaRoot();
       reader.loadNextBatch();

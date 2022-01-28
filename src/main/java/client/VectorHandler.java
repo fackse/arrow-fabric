@@ -261,7 +261,6 @@ public class VectorHandler implements AutoCloseable {
       int grpcChunkSize = Integer.parseInt(Util.getConfig().getProperty("grpcChunkSize"));
       while ((content = vectorStream.readNBytes(grpcChunkSize)).length != 0) {
         written += content.length;
-        logger.info("[Close stream write] Uploaded " + Util.getSizeFromBytes(written));
         try {
           requestObserver.onNext(
               SetVector.newBuilder()
@@ -274,6 +273,7 @@ public class VectorHandler implements AutoCloseable {
         }
       }
       assert written == estimated;
+      logger.info("[Close stream write] Uploaded " + Util.getSizeFromBytes(written));
       requestObserver.onCompleted();
     } else {
       finishLatch.countDown();

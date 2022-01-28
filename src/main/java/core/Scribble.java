@@ -49,8 +49,7 @@ public class Scribble implements Callable<Integer> {
     }
 
     public static void main(String[] args) throws Exception {
-        int exitCode = new CommandLine(new Scribble()).execute(args);
-        System.exit(exitCode);
+        assert Util.getConfig().getProperty("grpcChwunkSize")==null;
 
     /*
 

@@ -73,6 +73,24 @@
           </descriptorRefs>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.9.0</version>
+        <configuration>
+          <compilerArgs>
+            <arg>--add-exports</arg>
+            <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
+            <arg>--add-opens</arg>
+            <arg>java.base/java.lang=ALL-UNNAMED</arg>
+            <arg>--add-opens</arg>
+            <arg>java.base/java.lang.reflect=ALL-UNNAMED</arg>
+            <arg>--add-opens</arg>
+            <arg>java.base/java.io=ALL-UNNAMED</arg>
+            <arg>--add-opens</arg>
+            <arg>jdk.unsupported/sun.misc=ALL-UNNAMED</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>

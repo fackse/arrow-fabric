@@ -1,6 +1,7 @@
 package server;
 
 import core.ArrowAllocator;
+import core.Util;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
@@ -26,6 +27,8 @@ import picocli.CommandLine.Option;
 public class FabricServer implements Runnable {
 
   private static final FabricServer INSTANCE = new FabricServer();
+  // This little headroom is needed in order to copy data from local memory to grpc data stream
+  int dataHeadroom = Integer.parseInt(Util.getConfig().getProperty("dataHeadroom"));
 
   @Option(
       names = {"-p", "--port"},
@@ -47,14 +50,18 @@ public class FabricServer implements Runnable {
       description = "Address of (default: ${DEFAULT-VALUE})")
   private String dispatcherAddress = "localhost";
 
-  private static final Logger logger = LoggerFactory.getLogger(FabricServer.class.getName());
+  @Option(
+      names = {"--max-memory"},
+      description = "Maximum memory in bytes (default: ${DEFAULT-VALUE})")
+  private long maxMemory = Runtime.getRuntime().maxMemory() - dataHeadroom;
 
+  private static final Logger logger = LoggerFactory.getLogger(FabricServer.class.getName());
   private Server server;
-  private final ArrowAllocator allocator = new ArrowAllocator();
   private DispatcherServiceGrpc.DispatcherServiceBlockingStub dispatcherServiceBlockingStub;
   ManagedChannel dispatcher_channel;
 
   public void start() throws IOException {
+    ArrowAllocator allocator = new ArrowAllocator(maxMemory);
     dispatcher_channel =
         ManagedChannelBuilder.forTarget(dispatcherAddress+":"+dispatcherPort)
             // Channels are secure by default (via SSL/TLS). We disable TLS to avoid

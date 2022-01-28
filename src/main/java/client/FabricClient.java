@@ -2,15 +2,25 @@ package client;
 
 import static core.Util.getSizeFromBytes;
 import static core.Util.printTable;
+import static org.example.ArrowFabric.OP.OP_READ;
+import static org.example.ArrowFabric.OP.OP_WRITE;
 
+import com.google.common.base.Stopwatch;
 import core.ArrowAllocator;
+import core.Util;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.VarCharVector;
 import org.example.ArrowFabric.DispatcherServiceGrpc;
 import org.example.ArrowFabric.Empty;
 import org.example.ArrowFabric.OP;
@@ -20,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 @SuppressWarnings("FieldMayBeFinal")
 /*
@@ -32,6 +43,8 @@ import picocli.CommandLine.Command;
     description = "Starts the fabric client",
     version = "0.1")
 public class FabricClient implements AutoCloseable {
+  // This little headroom is needed in order to copy data from local memory to grpc data stream
+  int dataHeadroom = Integer.parseInt(Util.getConfig().getProperty("dataHeadroom"));
 
   @CommandLine.Option(
       names = {"-p", "--dispatcher-port"},
@@ -42,6 +55,11 @@ public class FabricClient implements AutoCloseable {
       names = {"-a", "--dispatcher-address"},
       description = "IP from dispatcher (default: ${DEFAULT-VALUE})")
   private String dispatcherAddress = "localhost";
+
+  @Option(
+      names = {"--max-memory"},
+      description = "Maximum memory in bytes (default: ${DEFAULT-VALUE})")
+  private long maxMemory = Runtime.getRuntime().maxMemory() - dataHeadroom;
 
   private static final Logger logger = LoggerFactory.getLogger(FabricClient.class.getName());
   private static final FabricClient INSTANCE = new FabricClient();
@@ -60,14 +78,15 @@ public class FabricClient implements AutoCloseable {
   /**
    * This {@link ArrowAllocator} is in charge of the underlying Arrow storage
    */
-  final ArrowAllocator allocator = new ArrowAllocator();
+  ArrowAllocator allocator;
 
   /**
    * Initially, the address of the FabricDispatcher must be known. With the help of the {@link
    * dispatcher.FabricDispatcher}, the fabric client later decides on which server the vectors
    * should be stored.
    */
-  private void buildChannel(){
+  private void buildChannel() {
+    allocator = new ArrowAllocator(maxMemory);
     dispatcher_channel =
         ManagedChannelBuilder.forTarget(dispatcherAddress + ":" + dispatcherPort)
             .usePlaintext()
@@ -180,6 +199,66 @@ public class FabricClient implements AutoCloseable {
   void commandListVectors() {
     buildChannel();
     INSTANCE.getVectors();
+  }
+
+  @Command(name = "benchmark", description = "benchmark")
+  void benchmark() {
+    buildChannel();
+    Random random = new Random();
+    int start = 0;
+    int end = 999;
+    String name = UUID.randomUUID().toString().replace("-", "");
+    List<Integer> range = IntStream.rangeClosed(start, end).boxed().collect(Collectors.toList());
+    IntVector v2 = null;
+    Stopwatch timer = Stopwatch.createStarted();
+    try (VectorHandler vectorHandler = INSTANCE.getHandler(IntVector.class, name, OP_WRITE)) {
+      v2 = vectorHandler.createLocalVector();
+      for (int index : range) {
+        v2.set(index, random.nextInt(end - start) + start);
+      }
+      v2.setValueCount(end + 1);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    logger.info("OP "+OP_WRITE+" Vector w/ "+end+"ints: " + timer.stop());
+    assert v2 != null;
+    timer.reset().start();
+    try (VectorHandler vectorHandler = INSTANCE.getHandler(IntVector.class, name, OP_READ)) {
+      IntVector v3 = (IntVector) vectorHandler.getVector();
+      for (int index : range) {
+        assert v2.get(index) == v3.get(index);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    logger.info("OP "+OP_READ+" Vector w/ "+end+"ints: " + timer.stop());
+
+
+    int size = 1000 * 1024 * 1024; // vector is roughly 1GB
+    byte[] payload = new byte[size];
+    name = UUID.randomUUID().toString();
+    VarCharVector v3;
+    timer.reset().start();
+    try (VectorHandler vectorHandler = INSTANCE.getHandler(VarCharVector.class, name, OP_WRITE)) {
+      v3 = vectorHandler.createLocalVector();
+      v3.setSafe(0, payload);
+      v3.setValueCount(1);
+      assert size == v3.sizeOfValueBuffer();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    logger.info("OP "+OP_WRITE+" Vector w/ size "+ Util.getSizeFromBytes(size)+": " + timer.stop());
+    timer.reset().start();
+    try (VectorHandler vectorHandler = INSTANCE.getHandler(VarCharVector.class, name, OP_READ)) {
+      VarCharVector v4 = (VarCharVector) vectorHandler.getVector();
+      assert (size == v4.sizeOfValueBuffer());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    logger.info("OP "+OP_READ+" Vector w/ size "+ Util.getSizeFromBytes(size)+": " + timer.stop());
+
+
+
   }
 
   public static void main(String[] args) throws Exception {

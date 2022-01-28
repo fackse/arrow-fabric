@@ -22,24 +22,34 @@ import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
-/** Implements services provided by Grpc proto and also heartbeat monitoring of servers. */
+/**
+ * Implements services provided by Grpc proto and also heartbeat monitoring of servers.
+ */
 public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServiceImplBase
     implements Runnable {
 
-  /** Logging instance */
+  /**
+   * Logging instance
+   */
   private static final Logger logger =
       LoggerFactory.getLogger(DispatcherServiceImpl.class.getName());
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   private final HashRing<ServerNode> ring = HashRing.<ServerNode>newBuilder().build();
 
-  /** {@link JedisPool} provided by {@link FabricDispatcher} */
+  /**
+   * {@link JedisPool} provided by {@link FabricDispatcher}
+   */
   private final JedisPool jedisPool;
 
-  /** Used to transform classes into json and back */
+  /**
+   * Used to transform classes into json and back
+   */
   private final Gson gson = new Gson();
 
-  public DispatcherServiceImpl(JedisPool jedisPool) throws JedisConnectionException{
+  public DispatcherServiceImpl(JedisPool jedisPool) throws JedisConnectionException {
     this.jedisPool = jedisPool;
     try {
       this.jedisPool.getResource();
@@ -87,13 +97,13 @@ public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServi
   /**
    * Adds vector information into redis.
    *
-   * @param name Name of the vector
-   * @param type Type of the vector
-   * @param size Size of vector in Bytes
+   * @param name        Name of the vector
+   * @param type        Type of the vector
+   * @param size        Size of vector in Bytes
    * @param numElements Number of elements inside the vector
-   * @param node Server/Node where the vector will be stored
+   * @param node        Server/Node where the vector will be stored
    * @return True if everything went fine, otherwise false when vector with these parameters is
-   *     already present
+   * already present
    */
   private boolean addVectorToRedis(
       String name, String type, long size, long numElements, ServerNode node) {
@@ -148,6 +158,7 @@ public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServi
       String cursor = "0";
       ScanParams sp = new ScanParams();
       sp.match("*");
+      sp.match("*");
       do {
         ScanResult<String> scanResult = jedis.scan(cursor, sp);
         for (String key : scanResult.getResult()) {
@@ -200,7 +211,7 @@ public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServi
   /**
    * Select appropriate server for the vector received.
    *
-   * @param request Contains all important information of the vector
+   * @param request          Contains all important information of the vector
    * @param responseObserver Answer channel to the client which asks for this OP
    */
   @Override
@@ -219,8 +230,12 @@ public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServi
           long sizeOfVector = request.getSize();
           long numElements = request.getLength();
           if (node.get().getHeadroom() < sizeOfVector) {
+            // Selected node is full
+
             status = ServerStatus.newBuilder().setCode(Code.ERROR_SERVER_MEMORY_EXHAUSTED).build();
             reply = ServerInfo.newBuilder().setStatus(status).build();
+            logger.warn("[getTicket: " + request.getOp() + "] name " + name + " type " + type
+                + " "+ Code.ERROR_SERVER_MEMORY_EXHAUSTED);
             break; // Server is full, inform client
           }
           if (addVectorToRedis(name, type, sizeOfVector, numElements, node.get())) {
@@ -304,7 +319,7 @@ public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServi
    * Called by every server to inform the dispatcher, that this server can now be used to store
    * vectors
    *
-   * @param request All information about the server, sent by the server
+   * @param request          All information about the server, sent by the server
    * @param responseObserver Answer channel to the server
    */
   @Override
@@ -329,30 +344,28 @@ public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServi
   /**
    * Returns all registered servers
    *
-   * @param request No data
+   * @param request          No data
    * @param responseObserver Answer channel to the client
    */
   @Override
   public void getServers(Empty request, StreamObserver<ServerInfo> responseObserver) {
-    for (ServerNode node : ring.getNodes()) {
-      responseObserver.onNext(
-          ServerInfo.newBuilder()
-              .setPort(node.getPort())
-              .setAddress(node.getAddress())
-              .setId(node.hashCode())
-              .setHeadroom(node.getHeadroom())
-              .setAllocatedMemory(node.getAllocatedMemory())
-              .setLimit(node.getLimit())
-              .setNumVectors(node.getNumVectors())
-              .build());
-    }
+    logger.info("[getServers]" + ring.getNodes());
+    ring.getNodes().stream().map(node -> ServerInfo.newBuilder()
+        .setPort(node.getPort())
+        .setAddress(node.getAddress())
+        .setId(node.hashCode())
+        .setHeadroom(node.getHeadroom())
+        .setAllocatedMemory(node.getAllocatedMemory())
+        .setLimit(node.getLimit())
+        .setNumVectors(node.getNumVectors())
+        .build()).forEach(responseObserver::onNext);
     responseObserver.onCompleted();
   }
 
   /**
    * Returns all registered vectors
    *
-   * @param request No data
+   * @param request          No data
    * @param responseObserver Answer channel to the client
    */
   @Override
@@ -363,7 +376,9 @@ public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServi
     responseObserver.onCompleted();
   }
 
-  /** Heartbeat thread which polls registered servers if they are still available */
+  /**
+   * Heartbeat thread which polls registered servers if they are still available
+   */
   @Override
   public void run() {
     for (ServerNode node : ring.getNodes()) {

@@ -62,6 +62,7 @@ public class VectorServiceImpl extends VectorServiceGrpc.VectorServiceImplBase {
     logger.info("[getVector] Start upload " + Util.getSizeFromBytes(estimated));
     while (true) {
       try {
+        // This part may overflow memory
         if ((content = vectorStream.readNBytes(grpcChunkSize)).length != 0) {
           written += content.length;
           logger.info("[getVector] Uploaded " + Util.getSizeFromBytes(written));
@@ -74,6 +75,8 @@ public class VectorServiceImpl extends VectorServiceGrpc.VectorServiceImplBase {
                     .build());
           } catch (StatusRuntimeException e) {
             logger.error("[getVector] RPC failed: {}", e.getStatus());
+          } catch (OutOfMemoryError e){
+            logger.error("OUT OF MEMORY!!!!");
           }
         } else {
           // If nothing more can be read
