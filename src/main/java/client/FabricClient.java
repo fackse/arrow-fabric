@@ -62,7 +62,7 @@ public class FabricClient implements AutoCloseable {
   private long maxMemory = Runtime.getRuntime().maxMemory() - dataHeadroom;
 
   private static final Logger logger = LoggerFactory.getLogger(FabricClient.class.getName());
-  private static final FabricClient INSTANCE = new FabricClient();
+  private static final FabricClient INSTANCE = new FabricClient(); // only used for CLI APP
 
   /**
    * {@link org.example.ArrowFabric.DispatcherServiceGrpc.DispatcherServiceBlockingStub} to
@@ -80,12 +80,16 @@ public class FabricClient implements AutoCloseable {
    */
   ArrowAllocator allocator;
 
+  public FabricClient() {
+    this.buildChannel();
+  }
+
   /**
    * Initially, the address of the FabricDispatcher must be known. With the help of the {@link
    * dispatcher.FabricDispatcher}, the fabric client later decides on which server the vectors
    * should be stored.
    */
-  private void buildChannel() {
+  public void buildChannel() {
     allocator = new ArrowAllocator(maxMemory);
     dispatcher_channel =
         ManagedChannelBuilder.forTarget(dispatcherAddress + ":" + dispatcherPort)

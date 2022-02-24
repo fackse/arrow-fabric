@@ -1,5 +1,6 @@
 package core;
 
+import client.VectorHandler;
 import com.google.protobuf.ByteString;
 import core.exceptions.UnknownVectorTypeException;
 import java.io.ByteArrayInputStream;
@@ -19,6 +20,8 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.ipc.ArrowStreamReader;
 import org.apache.arrow.vector.ipc.ArrowStreamWriter;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Every client or server needs a locally baked arrow storage to hold vectors.
@@ -29,6 +32,7 @@ public class ArrowAllocator {
    * Every client and server has its own {@link RootAllocator}. Vectors are placed into this
    */
   public volatile RootAllocator rootAllocator;
+  private static final Logger logger = LoggerFactory.getLogger(VectorHandler.class.getName());
 
   /**
    * Internal {@link java.util.HashMap} to access vectors
@@ -73,16 +77,19 @@ public class ArrowAllocator {
       IntVector vector = new IntVector(vectorName, rootAllocator);
       vector.allocateNew();
       vectors.put(buildKeyForKV(vector), vector);
+      logger.debug("IntVector created");
       return (T) vector;
     } else if (type_of_vector == Float8Vector.class) {
       Float8Vector vector = new Float8Vector(vectorName, rootAllocator);
       vector.allocateNew();
       vectors.put(buildKeyForKV(vector), vector);
+      logger.debug("Float8Vector created");
       return (T) vector;
     } else if (type_of_vector == VarCharVector.class) {
       VarCharVector vector = new VarCharVector(vectorName, rootAllocator);
       vector.allocateNew();
       vectors.put(buildKeyForKV(vector), vector);
+      logger.debug("VarCharVector created");
       return (T) vector;
     } else {
       throw new UnknownVectorTypeException(
