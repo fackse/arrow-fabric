@@ -116,7 +116,7 @@ public class FabricClient implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    dispatcher_channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    //dispatcher_channel.shutdown();
   }
 
   /**
