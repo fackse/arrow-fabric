@@ -21,6 +21,7 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 class FabricClientTest {
+
   private static Random random;
 
   @BeforeAll
@@ -92,12 +93,12 @@ class FabricClientTest {
   @RepeatedTest(10)
   @DisplayName("Varchar vector creation, setting, getting and deletion from an server")
   void varchar_test() throws Exception {
+    String name = UUID.randomUUID().toString().replace("-", "") + "varchar_test";
+    int start = 0;
+    int end = 999;
+    List<Integer> range = IntStream.rangeClosed(start, end).boxed().collect(Collectors.toList());
+    VarCharVector v2;
     try (FabricClient client = new FabricClient()) {
-      int start = 0;
-      int end = 999;
-      String name = UUID.randomUUID().toString().replace("-", "") + "varchar_test";
-      List<Integer> range = IntStream.rangeClosed(start, end).boxed().collect(Collectors.toList());
-      VarCharVector v2;
       try (VectorHandler vectorHandler = client.getHandler(VarCharVector.class, name, OP_WRITE)) {
         v2 = vectorHandler.createLocalVector();
         for (int index : range) {
@@ -105,7 +106,8 @@ class FabricClientTest {
         }
         v2.setValueCount(end + 1);
       }
-
+    }
+    try (FabricClient client = new FabricClient()) {
       try (VectorHandler vectorHandler = client.getHandler(VarCharVector.class, name, OP_READ)) {
         VarCharVector v3 = (VarCharVector) vectorHandler.getVector();
         for (int index : range) {

@@ -84,6 +84,12 @@ public class FabricClient implements AutoCloseable {
     this.buildChannel();
   }
 
+  public FabricClient(String dispatcherAddress, int dispatcherPort) {
+    this.dispatcherPort = dispatcherPort;
+    this.dispatcherAddress = dispatcherAddress;
+    this.buildChannel();
+  }
+
   /**
    * Initially, the address of the FabricDispatcher must be known. With the help of the {@link
    * dispatcher.FabricDispatcher}, the fabric client later decides on which server the vectors
@@ -120,7 +126,15 @@ public class FabricClient implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    //dispatcher_channel.shutdown();
+    dispatcher_channel.shutdown();
+    try {
+      if (!dispatcher_channel.awaitTermination(3500, TimeUnit.MILLISECONDS)) {
+        dispatcher_channel.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      dispatcher_channel.shutdownNow();
+    }
+
   }
 
   /**
