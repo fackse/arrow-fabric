@@ -75,7 +75,7 @@ public class VectorServiceImpl extends VectorServiceGrpc.VectorServiceImplBase {
                     .build());
           } catch (StatusRuntimeException e) {
             logger.error("[getVector] RPC failed: {}", e.getStatus());
-          } catch (OutOfMemoryError e){
+          } catch (OutOfMemoryError e) {
             logger.error("OUT OF MEMORY!!!!");
           }
         } else {
@@ -131,13 +131,22 @@ public class VectorServiceImpl extends VectorServiceGrpc.VectorServiceImplBase {
             Util.getSizeFromBytes(incoming.size()));
 
         ServerStatus reply;
-        if (allocator.readFromStream(incoming, name, type) != null) {
-          reply = ServerStatus.newBuilder().setCode(Code.OK).setMessage("Vector set").build();
-        } else {
+        try {
+          if (allocator.readFromStream(incoming, name, type) != null) {
+            reply = ServerStatus.newBuilder().setCode(Code.OK).setMessage("Vector set").build();
+          } else {
+            reply =
+                ServerStatus.newBuilder()
+                    .setCode(Code.ERROR)
+                    .setMessage(MessageFormat.format("Vector with name {} failed", name))
+                    .build();
+          }
+        } catch (org.apache.arrow.memory.OutOfMemoryException e){
+          logger.error(e.getMessage());
           reply =
               ServerStatus.newBuilder()
-                  .setCode(Code.ERROR)
-                  .setMessage(MessageFormat.format("Vector with name {} failed", name))
+                  .setCode(Code.ERROR_SERVER_MEMORY_EXHAUSTED)
+                  .setMessage(MessageFormat.format("Vector with name {} failed. Reason:{}", name, "ERROR_SERVER_MEMORY_EXHAUSTED"))
                   .build();
         }
         responseObserver.onNext(reply);

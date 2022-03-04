@@ -19,6 +19,11 @@ java -cp arrowfabric/target/ArrowFabric-1.0-SNAPSHOT-jar-with-dependencies.jar d
 ```bash
 java -cp arrowfabric/target/ArrowFabric-1.0-SNAPSHOT-jar-with-dependencies.jar server.FabricServer --address=$(hostname) --dispatcher-address=node59
 ```
+### Client
+```bash
+java -cp arrowfabric/target/ArrowFabric-1.0-SNAPSHOT-jar-with-dependencies.jar client.FabricClient -a=node83 list-servers
+```
+
 ###ycsb
 ```bash
 export PATH=/home/nabhan/python27/python-2.7.10/bin:$PATH

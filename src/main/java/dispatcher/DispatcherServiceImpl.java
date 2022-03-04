@@ -231,7 +231,6 @@ public class DispatcherServiceImpl extends DispatcherServiceGrpc.DispatcherServi
           long numElements = request.getLength();
           if (node.get().getHeadroom() < sizeOfVector) {
             // Selected node is full
-
             status = ServerStatus.newBuilder().setCode(Code.ERROR_SERVER_MEMORY_EXHAUSTED).build();
             reply = ServerInfo.newBuilder().setStatus(status).build();
             logger.warn("[getTicket: " + request.getOp() + "] name " + name + " type " + type

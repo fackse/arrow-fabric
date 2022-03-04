@@ -23,9 +23,14 @@ import org.slf4j.LoggerFactory;
  * core.ArrowAllocator}
  */
 public class VectorHandler implements AutoCloseable {
-  /** The fabric client owns the {@link core.ArrowAllocator} */
+
+  /**
+   * The fabric client owns the {@link core.ArrowAllocator}
+   */
   private final FabricClient fabricClient;
-  /** Several {@link OP}s can be performed on a vector. Each VectorHandler is bound to one OP. */
+  /**
+   * Several {@link OP}s can be performed on a vector. Each VectorHandler is bound to one OP.
+   */
   private final OP op;
   /**
    * Each vector has its type. Besides its name, the type is also important to distinguish its
@@ -47,14 +52,18 @@ public class VectorHandler implements AutoCloseable {
    * server
    */
   private VectorServiceGrpc.VectorServiceStub serverServiceStub;
-  /** gRPC {@link ManagedChannel} to talk to the server */
+  /**
+   * gRPC {@link ManagedChannel} to talk to the server
+   */
   private ManagedChannel server_channel;
   /**
    * gRPC {@link org.example.ArrowFabric.DispatcherServiceGrpc.DispatcherServiceBlockingStub} to
    * talk to the dispatcher
    */
   private final DispatcherServiceGrpc.DispatcherServiceBlockingStub dispatcherServiceBlockingStub;
-  /** gRPC {@link ManagedChannel} to talk to the FabricDispatcher */
+  /**
+   * gRPC {@link ManagedChannel} to talk to the FabricDispatcher
+   */
   ManagedChannel dispatcher_channel;
   private static final Logger logger = LoggerFactory.getLogger(VectorHandler.class.getName());
   /**
@@ -63,13 +72,13 @@ public class VectorHandler implements AutoCloseable {
   private boolean localGC = false;
 
   /**
-   * @param fabricClient The fabric client connects to the cluster. And, as a result, with the
-   *     dispatcher responsible for the cluster coordination.
+   * @param fabricClient      The fabric client connects to the cluster. And, as a result, with the
+   *                          dispatcher responsible for the cluster coordination.
    * @param dispatcherAddress Address of the dispatcher
-   * @param dispatcherPort Port of the dispatcher
-   * @param type_of_vector Type of vector
-   * @param name Name of vector
-   * @param op Type of {@link OP}
+   * @param dispatcherPort    Port of the dispatcher
+   * @param type_of_vector    Type of vector
+   * @param name              Name of vector
+   * @param op                Type of {@link OP}
    */
   public VectorHandler(
       FabricClient fabricClient,
@@ -105,7 +114,7 @@ public class VectorHandler implements AutoCloseable {
 
   /**
    * @return Arrow Vector backed by local storage
-   * @throws IOException If data cannot be deserialized into vector
+   * @throws IOException     If data cannot be deserialized into vector
    * @throws ServerException If no server is found which has this vector
    */
   public FieldVector getVector() throws IOException, ServerException {
@@ -173,7 +182,7 @@ public class VectorHandler implements AutoCloseable {
    * Find qualified server to bake provided vector and open channel to server
    *
    * @param request Send appropriate information to dispatcher, so it can decide which server is in
-   *     charge
+   *                charge
    * @throws ServerException Thrown when no suitable server is found to serve this request
    */
   public void getServer(GetServer request) throws ServerException {
