@@ -33,7 +33,7 @@ class FabricClientTest {
   static void afterAll() {
     JedisPool pool = new JedisPool(new JedisPoolConfig(), "localhost");
     try (Jedis jedis = pool.getResource()) {
-      // jedis.flushAll();
+      jedis.flushAll();
     }
     pool.close();
   }

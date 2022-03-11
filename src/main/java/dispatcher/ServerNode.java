@@ -12,6 +12,7 @@ public class ServerNode implements Node {
   private long limit;
   private long allocatedMemory;
   private long numVectors;
+  public static String SERVER_SEPARATOR = "+";
 
   /** Representation of a server inside a hash ring. Used to allocate each vector to a server */
   public ServerNode(
@@ -53,14 +54,13 @@ public class ServerNode implements Node {
   /** {@inheritDoc} */
   @Override
   public String getKey() {
-    return address + ":" + port;
+    return address + SERVER_SEPARATOR + port;
   }
 
   /** @return True if no space is left on the server, false if otherwise */
   public boolean isFull() {
     return limit - allocatedMemory <= 0;
   }
-
   /** {@inheritDoc} */
   @Override
   public boolean equals(Object o) {
@@ -73,13 +73,13 @@ public class ServerNode implements Node {
   /** {@inheritDoc} */
   @Override
   public int hashCode() {
-    return Objects.hash(address + ":" + port);
+    return Objects.hash(address + SERVER_SEPARATOR + port);
   }
 
   /** {@inheritDoc} */
   @Override
   public String toString() {
-    return address + ":" + port;
+    return address + SERVER_SEPARATOR + port;
   }
 
   /** @return Returns address from server*/
@@ -93,7 +93,7 @@ public class ServerNode implements Node {
 
   /** @return Returns URI of server. Used for redis.*/
   public String toURI() {
-    return address + "+" + port;
+    return address + SERVER_SEPARATOR + port;
   }
 
   /** @return Returns when the server was last seen as timestamp*/

@@ -88,33 +88,34 @@ public final class ArrowFabric {
       "id\030\003 \001(\003\022\r\n\005limit\030\004 \001(\003\022\027\n\017allocatedMemo" +
       "ry\030\005 \001(\003\022\020\n\010headroom\030\006 \001(\003\022\023\n\013num_vector" +
       "s\030\007 \001(\003\0225\n\006status\030\010 \001(\0132%.org.example.Ar" +
-      "rowFabric.ServerStatus*\210\001\n\004Code\022\013\n\007UNKNO" +
+      "rowFabric.ServerStatus*\254\001\n\004Code\022\013\n\007UNKNO" +
       "WN\020\000\022\006\n\002OK\020\001\022\t\n\005ERROR\020\002\022\032\n\026ERROR_VECTOR_" +
       "NOT_FOUND\020\003\022!\n\035ERROR_VECTOR_ALREADY_EXIS" +
       "TENT\020\004\022!\n\035ERROR_SERVER_MEMORY_EXHAUSTED\020" +
-      "\005*.\n\002OP\022\013\n\007OP_READ\020\000\022\014\n\010OP_WRITE\020\001\022\r\n\tOP" +
-      "_DELETE\020\0022\371\002\n\rVectorService\022\\\n\014createVec" +
-      "tor\022%.org.example.ArrowFabric.CreateVect" +
-      "or\032%.org.example.ArrowFabric.ServerStatu" +
-      "s\022X\n\tsetVector\022\".org.example.ArrowFabric" +
-      ".SetVector\032%.org.example.ArrowFabric.Ser" +
-      "verStatus(\001\022U\n\tgetVector\022\".org.example.A" +
-      "rrowFabric.GetVector\032\".org.example.Arrow" +
-      "Fabric.SetVector0\001\022Y\n\014deleteVector\022\".org" +
-      ".example.ArrowFabric.GetVector\032%.org.exa" +
-      "mple.ArrowFabric.ServerStatus2\361\002\n\021Dispat" +
-      "cherService\022T\n\tgetServer\022\".org.example.A" +
-      "rrowFabric.GetServer\032#.org.example.Arrow" +
-      "Fabric.ServerInfo\022\\\n\016registerServer\022#.or" +
-      "g.example.ArrowFabric.ServerInfo\032%.org.e" +
-      "xample.ArrowFabric.ServerStatus\022S\n\ngetSe" +
-      "rvers\022\036.org.example.ArrowFabric.Empty\032#." +
-      "org.example.ArrowFabric.ServerInfo0\001\022S\n\n" +
-      "getVectors\022\036.org.example.ArrowFabric.Emp" +
-      "ty\032#.org.example.ArrowFabric.VectorInfo0" +
-      "\0012a\n\020HeartbeatService\022M\n\004ping\022\036.org.exam" +
-      "ple.ArrowFabric.Empty\032%.org.example.Arro" +
-      "wFabric.ServerStatusB\002P\001b\006proto3"
+      "\005\022\"\n\036ERROR_CLUSTER_MEMORY_EXHAUSTED\020\006*.\n" +
+      "\002OP\022\013\n\007OP_READ\020\000\022\014\n\010OP_WRITE\020\001\022\r\n\tOP_DEL" +
+      "ETE\020\0022\371\002\n\rVectorService\022\\\n\014createVector\022" +
+      "%.org.example.ArrowFabric.CreateVector\032%" +
+      ".org.example.ArrowFabric.ServerStatus\022X\n" +
+      "\tsetVector\022\".org.example.ArrowFabric.Set" +
+      "Vector\032%.org.example.ArrowFabric.ServerS" +
+      "tatus(\001\022U\n\tgetVector\022\".org.example.Arrow" +
+      "Fabric.GetVector\032\".org.example.ArrowFabr" +
+      "ic.SetVector0\001\022Y\n\014deleteVector\022\".org.exa" +
+      "mple.ArrowFabric.GetVector\032%.org.example" +
+      ".ArrowFabric.ServerStatus2\361\002\n\021Dispatcher" +
+      "Service\022T\n\tgetServer\022\".org.example.Arrow" +
+      "Fabric.GetServer\032#.org.example.ArrowFabr" +
+      "ic.ServerInfo\022\\\n\016registerServer\022#.org.ex" +
+      "ample.ArrowFabric.ServerInfo\032%.org.examp" +
+      "le.ArrowFabric.ServerStatus\022S\n\ngetServer" +
+      "s\022\036.org.example.ArrowFabric.Empty\032#.org." +
+      "example.ArrowFabric.ServerInfo0\001\022S\n\ngetV" +
+      "ectors\022\036.org.example.ArrowFabric.Empty\032#" +
+      ".org.example.ArrowFabric.VectorInfo0\0012a\n" +
+      "\020HeartbeatService\022M\n\004ping\022\036.org.example." +
+      "ArrowFabric.Empty\032%.org.example.ArrowFab" +
+      "ric.ServerStatusB\002P\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

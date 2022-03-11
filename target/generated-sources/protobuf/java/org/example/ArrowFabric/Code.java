@@ -32,6 +32,10 @@ public enum Code
    * <code>ERROR_SERVER_MEMORY_EXHAUSTED = 5;</code>
    */
   ERROR_SERVER_MEMORY_EXHAUSTED(5),
+  /**
+   * <code>ERROR_CLUSTER_MEMORY_EXHAUSTED = 6;</code>
+   */
+  ERROR_CLUSTER_MEMORY_EXHAUSTED(6),
   UNRECOGNIZED(-1),
   ;
 
@@ -59,6 +63,10 @@ public enum Code
    * <code>ERROR_SERVER_MEMORY_EXHAUSTED = 5;</code>
    */
   public static final int ERROR_SERVER_MEMORY_EXHAUSTED_VALUE = 5;
+  /**
+   * <code>ERROR_CLUSTER_MEMORY_EXHAUSTED = 6;</code>
+   */
+  public static final int ERROR_CLUSTER_MEMORY_EXHAUSTED_VALUE = 6;
 
 
   public final int getNumber() {
@@ -91,6 +99,7 @@ public enum Code
       case 3: return ERROR_VECTOR_NOT_FOUND;
       case 4: return ERROR_VECTOR_ALREADY_EXISTENT;
       case 5: return ERROR_SERVER_MEMORY_EXHAUSTED;
+      case 6: return ERROR_CLUSTER_MEMORY_EXHAUSTED;
       default: return null;
     }
   }
